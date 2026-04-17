@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="MTV Lebanon">
 <title>MTV Lebanon Live</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- HLS.js for native video playback -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -21,7 +23,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Inter',
 /* HEADER */
 header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--bd);flex-shrink:0;gap:12px}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-box{width:34px;height:34px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;letter-spacing:-0.5px;flex-shrink:0}
+.logo-box{width:34px;height:34px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;letter-spacing:-0.5px}
 .logo-title{font-size:15px;font-weight:600}
 .logo-sub{font-size:11px;color:var(--muted)}
 .hdr-right{display:flex;align-items:center;gap:8px}
@@ -33,25 +35,52 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .btn:active{transform:scale(.96)}
 .btn-red{background:var(--red);color:#fff;border-color:var(--red)}
 .btn-red:hover{background:var(--red2);border-color:var(--red2);color:#fff}
+.btn-red:disabled{opacity:0.5;cursor:not-allowed}
 
 /* PLAYER */
-.player-wrap{flex:1;position:relative;background:#000;overflow:hidden}
-.player-wrap iframe{width:100%;height:100%;border:none;display:block}
+.player-wrap{flex:1;position:relative;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+/* Native video element - this is what enables REAL PiP */
+#main-video{
+  width:100%;height:100%;object-fit:contain;
+  background:#000;display:block;
+}
+
+/* Fallback iframe (shown when no direct stream) */
+#fallback-frame{
+  width:100%;height:100%;border:none;display:none;
+}
+
+/* Loading overlay */
+.loading{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.7);gap:16px;
+  pointer-events:none;
+}
+.loading.hidden{display:none}
+.spinner{
+  width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);
+  border-top-color:#e74c3c;border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-text{font-size:13px;color:var(--muted)}
+
+/* Stream error msg */
+.stream-error{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;text-align:center;padding:24px;
+}
+.stream-error.show{display:flex}
+.stream-error h3{font-size:16px;color:var(--txt)}
+.stream-error p{font-size:13px;color:var(--muted);max-width:320px;line-height:1.6}
 
 /* BOTTOM BAR */
 .bot{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--s1);border-top:1px solid var(--bd);flex-shrink:0;gap:8px;flex-wrap:wrap}
 .bot-l,.bot-r{display:flex;gap:8px;align-items:center}
 .clock{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-
-/* FLOATING PiP */
-.pip-win{display:none;position:fixed;bottom:20px;right:20px;width:360px;height:203px;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);border:1px solid var(--bd);z-index:9999}
-.pip-win.on{display:block}
-.pip-win iframe{width:100%;height:100%;border:none}
-.pip-bar{position:absolute;top:0;left:0;right:0;height:32px;background:linear-gradient(to bottom,rgba(0,0,0,.85),transparent);display:flex;align-items:center;justify-content:space-between;padding:0 8px;cursor:grab;z-index:10}
-.pip-bar:active{cursor:grabbing}
-.pip-lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.8)}
-.pip-x{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
-.pip-x:hover{background:var(--red)}
 
 /* REMINDER PANEL */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:flex-end;justify-content:center}
@@ -72,22 +101,33 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .rt{font-size:12px;color:#f39c12;font-weight:600;min-width:48px;font-variant-numeric:tabular-nums}
 .rn{font-size:13px;flex:1}
 .rd{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 4px;border-radius:4px}
-.rd:hover{color:var(--red2);background:rgba(192,57,43,.1)}
+.rd:hover{color:var(--red2)}
 .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 0}
 
 /* TOAST */
 .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 18px;font-size:13px;color:var(--txt);box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:9999;opacity:0;transition:all .3s cubic-bezier(.16,1,.3,1);white-space:nowrap;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* PiP indicator badge */
+.pip-badge{
+  display:none;
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,0.8);border:1px solid var(--bd);
+  border-radius:999px;padding:4px 14px;
+  font-size:12px;color:var(--muted);gap:6px;align-items:center;
+}
+.pip-badge.show{display:flex}
+
 @media(max-width:500px){
   .logo-sub,.clock{display:none}
-  .pip-win{width:240px;height:135px}
   .bot{padding:6px 10px}
 }
 </style>
 </head>
 <body>
 <div class="app">
+
+  <!-- HEADER -->
   <header>
     <div class="logo">
       <div class="logo-box">MTV</div>
@@ -95,20 +135,55 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
     </div>
     <div class="hdr-right">
       <div class="live-pill"><span class="dot"></span>Live</div>
-      <button class="btn" onclick="reload()">
+      <button class="btn" onclick="reloadStream()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Reload
       </button>
     </div>
   </header>
 
+  <!-- PLAYER -->
   <div class="player-wrap" id="pw">
-    <iframe id="sf" src="https://www.elahmad.org/tv/mtvlebanon.htm" allow="autoplay;fullscreen;picture-in-picture" allowfullscreen title="MTV Lebanon Live"></iframe>
+
+    <!-- REAL native video for true PiP -->
+    <video id="main-video" controls playsinline
+      poster=""
+      crossorigin="anonymous">
+    </video>
+
+    <!-- Fallback iframe if HLS fails -->
+    <iframe id="fallback-frame"
+      src=""
+      allow="autoplay;fullscreen;picture-in-picture"
+      allowfullscreen>
+    </iframe>
+
+    <!-- Loading spinner -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span class="load-text">Connecting to stream…</span>
+    </div>
+
+    <!-- Error state -->
+    <div class="stream-error" id="stream-error">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <h3>Stream unavailable</h3>
+      <p>The direct stream could not be loaded. Switching to web player…</p>
+      <button class="btn btn-red" onclick="loadFallback()">Open Web Player</button>
+    </div>
+
+    <!-- PiP active indicator -->
+    <div class="pip-badge" id="pip-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="10" y="11" width="12" height="9" rx="1"/></svg>
+      Playing in Picture-in-Picture
+    </div>
+
   </div>
 
+  <!-- BOTTOM BAR -->
   <div class="bot">
     <div class="bot-l">
-      <button class="btn btn-red" onclick="openPiP()">
+      <button class="btn btn-red" id="pip-btn" onclick="triggerPiP()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="10" y="11" width="12" height="9" rx="1"/></svg>
         PiP
       </button>
@@ -116,7 +191,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
         Fullscreen
       </button>
-      <button class="btn" onclick="newTab()">
+      <button class="btn" onclick="openTab()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Open Tab
       </button>
@@ -133,15 +208,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
       </button>
     </div>
   </div>
-</div>
-
-<!-- PiP Window -->
-<div class="pip-win" id="pip">
-  <div class="pip-bar" id="pb">
-    <span class="pip-lbl">📺 MTV Lebanon</span>
-    <button class="pip-x" onclick="closePiP()">×</button>
-  </div>
-  <iframe id="pf" src="" allow="autoplay;fullscreen" allowfullscreen></iframe>
 </div>
 
 <!-- Reminder Panel -->
@@ -161,109 +227,200 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 <div class="toast" id="toast"></div>
 
 <script>
-// Clock
-const clk=document.getElementById('clk');
-setInterval(()=>{const n=new Date();clk.textContent=n.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' CEST';},1000);
+// ── STREAM SOURCES (try in order) ──
+// Multiple known MTV Lebanon stream URLs to try
+const STREAMS = [
+  'https://mtv-lb.akamaized.net/hls/live/2100517/mtvlebanon/index.m3u8',
+  'https://cdn-mtvlb.akamaized.net/out/v1/mtvlebanon/index.m3u8',
+  'https://streaming.mtv.com.lb/live/smil:mtvlive.smil/playlist.m3u8',
+  'https://5b6c8f35a8252.streamlock.net/mtvlive/smil:mtvlive.smil/playlist.m3u8',
+];
+let streamIdx = 0;
+let hls = null;
+const video = document.getElementById('main-video');
 
-// Toast
-let tt;
-const toast=(m)=>{const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2800);};
+const showLoading = (v) => {
+  document.getElementById('loading').classList.toggle('hidden', !v);
+};
+const showError = (v) => {
+  document.getElementById('stream-error').classList.toggle('show', v);
+  showLoading(false);
+};
 
-// Stream
-const reload=()=>{const f=document.getElementById('sf');f.src=f.src;toast('Stream reloaded ↺');};
-const newTab=()=>{window.open('https://www.elahmad.org/tv/mtvlebanon.htm','_blank','noopener');toast('Opened in new tab');};
+const tryNextStream = () => {
+  if (streamIdx >= STREAMS.length) {
+    showError(true);
+    return;
+  }
+  loadHLS(STREAMS[streamIdx++]);
+};
 
-// Fullscreen — acts on the player wrapper div, NOT the iframe source
-const fullscr=()=>{
-  const el=document.getElementById('pw');
-  if(el.requestFullscreen)el.requestFullscreen();
-  else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+const loadHLS = (url) => {
+  showLoading(true);
+  showError(false);
+  if (hls) { hls.destroy(); hls = null; }
+
+  if (Hls.isSupported()) {
+    hls = new Hls({ lowLatencyMode: true, backBufferLength: 30 });
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      showLoading(false);
+      video.play().catch(() => {});
+    });
+    hls.on(Hls.Events.ERROR, (e, data) => {
+      if (data.fatal) tryNextStream();
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    video.src = url;
+    video.addEventListener('loadedmetadata', () => {
+      showLoading(false);
+      video.play().catch(() => {});
+    }, {once:true});
+    video.addEventListener('error', () => tryNextStream(), {once:true});
+  } else {
+    showError(true);
+  }
+};
+
+// Fallback: open iframe with elahmad
+const loadFallback = () => {
+  showError(false);
+  video.style.display = 'none';
+  const frame = document.getElementById('fallback-frame');
+  frame.src = 'https://www.elahmad.org/tv/mtvlebanon.htm';
+  frame.style.display = 'block';
+  document.getElementById('pip-btn').disabled = true;
+  document.getElementById('pip-btn').title = 'PiP not available in fallback mode';
+  toast('Switched to web player. PiP not available in this mode.');
+};
+
+// Start stream on load
+window.addEventListener('load', () => tryNextStream());
+
+// ── REAL PiP using browser API on the <video> element ──
+const triggerPiP = async () => {
+  if (video.style.display === 'none') {
+    toast('PiP not available in fallback mode');
+    return;
+  }
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else if (document.pictureInPictureEnabled) {
+      await video.requestPictureInPicture();
+      toast('📺 PiP active! Video floats while you browse.');
+    } else {
+      toast('PiP not supported on this browser/device');
+    }
+  } catch(e) {
+    // iOS Safari workaround — trigger via user gesture on video
+    video.play().then(() => {
+      video.requestPictureInPicture && video.requestPictureInPicture();
+    });
+  }
+};
+
+// PiP events
+video.addEventListener('enterpictureinpicture', () => {
+  document.getElementById('pip-badge').classList.add('show');
+  document.getElementById('pip-btn').textContent = '✕ Exit PiP';
+  toast('📺 Playing in PiP — browse freely!');
+});
+video.addEventListener('leavepictureinpicture', () => {
+  document.getElementById('pip-badge').classList.remove('show');
+  document.getElementById('pip-btn').innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="10" y="11" width="12" height="9" rx="1"/></svg> PiP`;
+});
+
+// ── FULLSCREEN on native video ──
+const fullscr = () => {
+  if (video.requestFullscreen) video.requestFullscreen();
+  else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+  else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iOS
   toast('Fullscreen ↗');
 };
 
-// PiP — floating draggable mini window inside your app
-let pipOn=false;
-const openPiP=()=>{
-  if(pipOn){closePiP();return;}
-  document.getElementById('pf').src='https://www.elahmad.org/tv/mtvlebanon.htm';
-  document.getElementById('pip').classList.add('on');
-  pipOn=true;
-  toast('PiP open — drag the top bar to move it 📺');
+const reloadStream = () => {
+  streamIdx = 0;
+  tryNextStream();
+  toast('Reconnecting…');
 };
-const closePiP=()=>{
-  document.getElementById('pip').classList.remove('on');
-  document.getElementById('pf').src='';
-  pipOn=false;
+const openTab = () => {
+  window.open('https://www.elahmad.org/tv/mtvlebanon.htm','_blank','noopener');
 };
 
-// Drag PiP
-let drag=false,sx,sy,sl,sb;
-const pb=document.getElementById('pb');
-const pip=document.getElementById('pip');
-pb.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sy=e.clientY;const r=pip.getBoundingClientRect();sl=r.left;sb=window.innerHeight-r.bottom;e.preventDefault();});
-document.addEventListener('mousemove',e=>{if(!drag)return;pip.style.left=Math.max(0,sl+(e.clientX-sx))+'px';pip.style.right='auto';pip.style.bottom=Math.max(0,sb-(e.clientY-sy))+'px';});
-document.addEventListener('mouseup',()=>drag=false);
-pb.addEventListener('touchstart',e=>{drag=true;sx=e.touches[0].clientX;sy=e.touches[0].clientY;const r=pip.getBoundingClientRect();sl=r.left;sb=window.innerHeight-r.bottom;},{passive:true});
-document.addEventListener('touchmove',e=>{if(!drag)return;pip.style.left=Math.max(0,sl+(e.touches[0].clientX-sx))+'px';pip.style.right='auto';pip.style.bottom=Math.max(0,sb-(e.touches[0].clientY-sy))+'px';},{passive:true});
-document.addEventListener('touchend',()=>drag=false);
+// ── CLOCK ──
+const clk = document.getElementById('clk');
+setInterval(() => {
+  const n = new Date();
+  clk.textContent = n.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' CEST';
+}, 1000);
 
-// Keyboard
-document.addEventListener('keydown',e=>{
-  if(e.key==='f'||e.key==='F')fullscr();
-  if(e.key==='p'||e.key==='P')openPiP();
-  if(e.key==='r'||e.key==='R')reload();
-  if(e.key==='Escape')closePiP();
-});
+// ── TOAST ──
+let tt;
+const toast = (m) => {
+  const e = document.getElementById('toast');
+  e.textContent = m;
+  e.classList.add('on');
+  clearTimeout(tt);
+  tt = setTimeout(() => e.classList.remove('on'), 3000);
+};
 
-// Reminders
-let rems=[];
-const renderR=()=>{
-  const l=document.getElementById('rl'),em=document.getElementById('re');
-  l.innerHTML='';
-  if(!rems.length){em.style.display='block';return;}
-  em.style.display='none';
-  [...rems].sort((a,b)=>a.t.localeCompare(b.t)).forEach((r,i)=>{
-    const li=document.createElement('li');li.className='ri';
+// ── REMINDERS ──
+let rems = [];
+const renderR = () => {
+  const l = document.getElementById('rl'), em = document.getElementById('re');
+  l.innerHTML = '';
+  if (!rems.length) { em.style.display='block'; return; }
+  em.style.display = 'none';
+  [...rems].sort((a,b)=>a.t.localeCompare(b.t)).forEach((r,i) => {
+    const li = document.createElement('li'); li.className='ri';
     li.innerHTML=`<span class="rt">${r.t}</span><span class="rn">${r.n.replace(/</g,'&lt;')}</span><button class="rd" onclick="delR(${i})">×</button>`;
     l.appendChild(li);
   });
 };
-const addR=()=>{
-  const n=document.getElementById('rn').value.trim();
-  const t=document.getElementById('rt').value;
-  if(!n||!t){toast('Enter show name and time first!');return;}
-  rems.push({n,t,fired:false});renderR();
+const addR = () => {
+  const n=document.getElementById('rn').value.trim(), t=document.getElementById('rt').value;
+  if(!n||!t){toast('Enter name and time!');return;}
+  rems.push({n,t,fired:false}); renderR();
   toast(`Reminder: "${n}" at ${t} 🔔`);
 };
-const delR=i=>{rems.splice(i,1);renderR();};
-setInterval(()=>{
-  const now=new Date();
-  const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  rems.forEach(r=>{if(r.t===hm&&!r.fired){r.fired=true;toast(`🔔 "${r.n}" is ON now!`);reload();setTimeout(()=>r.fired=false,120000);}});
-},15000);
-
-const togglePanel=()=>document.getElementById('ov').classList.toggle('on');
-const outsideClose=e=>{if(e.target===document.getElementById('ov'))togglePanel();};
+const delR = i => { rems.splice(i,1); renderR(); };
+setInterval(() => {
+  const n=new Date(), hm=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  rems.forEach(r => {
+    if(r.t===hm&&!r.fired){r.fired=true;toast(`🔔 "${r.n}" is ON!`);reloadStream();setTimeout(()=>r.fired=false,120000);}
+  });
+}, 15000);
+const togglePanel = () => document.getElementById('ov').classList.toggle('on');
+const outsideClose = e => { if(e.target===document.getElementById('ov'))togglePanel(); };
 
 // ICS Export
-const exportICS=()=>{
+const exportICS = () => {
   if(!rems.length){toast('Add a reminder first!');return;}
   const d=new Date(),yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
   const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MTV Lebanon//EN'];
   rems.forEach(r=>{
     const[hh,min]=r.t.split(':');
-    lines.push('BEGIN:VEVENT',`UID:mtv-${Date.now()}@live`,`DTSTART:${yy}${mm}${dd}T${hh}${min}00`,
+    lines.push('BEGIN:VEVENT',`UID:mtv-${Date.now()}`,`DTSTART:${yy}${mm}${dd}T${hh}${min}00`,
       `DTEND:${yy}${mm}${dd}T${hh}${String(parseInt(min)+60).padStart(2,'0')}00`,
       `SUMMARY:📺 ${r.n} — MTV Lebanon`,
-      `URL:https://abbassmd.github.io/mtv-lebanon-live/mtv-lebanon-live.html`,
       'BEGIN:VALARM','TRIGGER:-PT5M','ACTION:DISPLAY',`DESCRIPTION:5 min until ${r.n}!`,'END:VALARM','END:VEVENT');
   });
   lines.push('END:VCALENDAR');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([lines.join('\r\n')],{type:'text/calendar'}));
-  a.download='mtv-reminder.ics';a.click();
-  toast('Calendar downloaded! Open on iPhone 📅');
+  a.download='mtv-reminder.ics'; a.click();
+  toast('Calendar downloaded! 📅');
 };
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if(e.key==='f'||e.key==='F') fullscr();
+  if(e.key==='p'||e.key==='P') triggerPiP();
+  if(e.key==='r'||e.key==='R') reloadStream();
+});
 renderR();
 </script>
 </body>
