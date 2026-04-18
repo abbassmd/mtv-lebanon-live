@@ -6,68 +6,300 @@
   <title>MTV Lebanon Live</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#09090f">
   <style>
+    :root {
+      --bg: #09090f;
+      --card: #141420;
+      --card-2: #1a1b28;
+      --line: #2a2d40;
+      --text: #f4f5fb;
+      --muted: #a8afc3;
+      --accent: #f03333;
+      --accent-2: #ff5b5b;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --blue: #60a5fa;
+      --radius: 22px;
+      --shadow: 0 18px 48px rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; }
     html, body {
       margin: 0;
-      background: #0b0b0f;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 0;
+      background: radial-gradient(circle at top, #101224 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif;
+      min-height: 100%;
     }
-    body { padding: 18px; }
-    .wrap { max-width: 900px; margin: 0 auto; }
+
+    body {
+      padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 1.3rem + 2vw, 3rem);
+      line-height: 1.05;
+    }
+
+    .sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+    }
+
+    .badge.live {
+      background: rgba(240,51,51,.12);
+      color: #ff8a8a;
+      border-color: rgba(240,51,51,.28);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
     .card {
-      background: #15151c;
-      border: 1px solid #2a2a35;
-      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(20,20,32,.98), rgba(16,17,27,.98));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       overflow: hidden;
     }
-    .video-box {
+
+    .player-wrap {
+      position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
       background: #000;
     }
-    video {
+
+    video, iframe {
       width: 100%;
       height: 100%;
       display: block;
+      border: 0;
       background: #000;
     }
-    .controls {
+
+    iframe { display: none; }
+
+    .overlay-note {
+      position: absolute;
+      inset: auto 12px 12px 12px;
+      z-index: 2;
+      background: rgba(10,10,18,.72);
+      border: 1px solid rgba(255,255,255,.08);
+      color: #e8ecff;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: .92rem;
+      backdrop-filter: blur(6px);
+    }
+
+    .toolbar {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
       padding: 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.02);
     }
-    button {
-      border: 0;
-      border-radius: 14px;
+
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 16px;
       padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--text);
+      background: #24273a;
+      transition: transform .08s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .btn:active { transform: scale(.985); }
+    .btn.primary {
+      background: linear-gradient(180deg, var(--accent), #cf2626);
+      color: #fff;
+    }
+    .btn.primary:hover { background: linear-gradient(180deg, var(--accent-2), var(--accent)); }
+    .btn.secondary {
+      background: #222437;
+      border-color: #353954;
+    }
+    .btn.secondary:hover { background: #2a2d43; }
+    .btn.ghost {
+      background: #171928;
+      border-color: #2b2f47;
+    }
+
+    .status {
+      margin-top: 14px;
+      background: #182033;
+      border: 1px solid #2a3959;
+      color: #dfe9ff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: .96rem;
+      white-space: pre-line;
+      line-height: 1.45;
+    }
+
+    .grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(20,20,32,.92), rgba(16,17,27,.92));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.05rem;
+    }
+
+    .panel p, .panel li {
+      color: var(--muted);
+      font-size: .96rem;
+      line-height: 1.55;
+    }
+
+    .line-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #181a29;
+      border: 1px solid #2a2e46;
+      font-size: .93rem;
+      align-items: center;
+    }
+
+    .line .label { color: var(--text); font-weight: 700; }
+    .line .value { color: var(--muted); text-align: right; }
+
+    .links {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .link-btn {
+      appearance: none;
+      text-align: left;
+      border: 1px solid #323652;
+      background: #181a29;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 14px 15px;
+      font-size: .95rem;
       cursor: pointer;
     }
-    .primary { background: #d72828; color: #fff; }
-    .secondary { background: #232330; color: #fff; border: 1px solid #343445; }
-    .status {
-      margin-top: 16px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #1d2430;
-      border: 1px solid #2b3950;
-      color: #dbeafe;
-      white-space: pre-line;
+
+    .link-btn small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .84rem;
     }
-    @media (max-width: 640px) {
-      .controls { grid-template-columns: 1fr; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .88em;
+      background: rgba(255,255,255,.05);
+      padding: .15em .4em;
+      border-radius: .45em;
+    }
+
+    .footer {
+      margin-top: 16px;
+      text-align: center;
+      color: #8189a2;
+      font-size: .82rem;
+    }
+
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 560px) {
+      .toolbar { grid-template-columns: 1fr; }
+      .overlay-note { font-size: .86rem; }
+      .line { flex-direction: column; align-items: flex-start; }
+      .line .value { text-align: left; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>MTV Lebanon Live</h1>
+    <div class="hero">
+      <div>
+        <h1>MTV Lebanon Live</h1>
+        <div class="sub">Primary mode: direct stream for PiP • Backup mode: original website</div>
+      </div>
+      <div class="badge-row">
+        <div class="badge live"><span class="dot"></span> LIVE</div>
+        <div class="badge" id="modeBadge">DIRECT MODE</div>
+      </div>
+    </div>
 
     <div class="card">
-      <div class="video-box">
+      <div class="player-wrap">
         <video
           id="player"
           controls
@@ -76,110 +308,277 @@
           preload="auto"
           crossorigin="anonymous"
         ></video>
+
+        <iframe
+          id="backupFrame"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+          referrerpolicy="no-referrer"
+          title="Backup website player"
+        ></iframe>
+
+        <div class="overlay-note" id="overlayNote">
+          Direct mode is best for PiP. If it fails, tap <strong>Use Backup Site</strong>.
+        </div>
       </div>
 
-      <div class="controls">
-        <button class="primary" id="playBtn">Play / Unmute / PiP</button>
-        <button class="secondary" id="reloadBtn">Reload Stream</button>
-        <button class="secondary" id="nextBtn">Try Next Source</button>
-        <button class="secondary" id="siteBtn">Open Original Site</button>
+      <div class="toolbar">
+        <button class="btn primary" id="playBtn">Start Sound + PiP</button>
+        <button class="btn secondary" id="reloadBtn">Reload</button>
+        <button class="btn secondary" id="backupBtn">Use Backup Site</button>
+        <button class="btn ghost" id="copyBtn">Copy This Page Link</button>
       </div>
     </div>
 
-    <div class="status" id="status">Ready.</div>
+    <div class="status" id="status">Ready.
+Primary direct stream: https://hms.pfs.gdn/v1/broadcast/mtv/playlist.m3u8
+Backup site: https://www.elahmad.org/tv/mtvlebanon.htm</div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Best setup now</h2>
+        <div class="line-list">
+          <div class="line"><span class="label">1. GitHub version</span><span class="value">Use this page as your main link</span></div>
+          <div class="line"><span class="label">2. iPhone use</span><span class="value">Open in Safari • Add to Home Screen</span></div>
+          <div class="line"><span class="label">3. Normal watching</span><span class="value">Tap <strong>Start Sound + PiP</strong></span></div>
+          <div class="line"><span class="label">4. If stream fails</span><span class="value">Tap <strong>Use Backup Site</strong></span></div>
+        </div>
+
+        <div class="links">
+          <button class="link-btn" id="openBackupTabBtn">
+            Open backup site in a new tab
+            <small>Best fallback if the embedded backup page behaves better directly in Safari.</small>
+          </button>
+          <button class="link-btn" id="directModeBtn">
+            Switch back to direct mode
+            <small>Use this again when you want PiP from the direct stream.</small>
+          </button>
+          <button class="link-btn" id="copyBackupModeBtn">
+            Copy backup-mode link
+            <small>Useful if you want a second shortcut that opens straight into backup mode.</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Mode details</h2>
+        <div class="line-list">
+          <div class="line"><span class="label">Direct stream</span><span class="value" id="directUrlText">hms.pfs.gdn/v1/broadcast/mtv/playlist.m3u8</span></div>
+          <div class="line"><span class="label">Backup site</span><span class="value">elahmad.org/tv/mtvlebanon.htm</span></div>
+          <div class="line"><span class="label">Best for PiP</span><span class="value">Direct mode</span></div>
+          <div class="line"><span class="label">Best if direct fails</span><span class="value">Backup site</span></div>
+        </div>
+        <p style="margin-top:12px;">
+          In backup mode, the page loads the original website inside an <code>iframe</code>. That is a good fallback for watching, but the outer GitHub page cannot directly control the backup page’s internal player.
+        </p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>iPhone automation</h2>
+      <p>
+        In Shortcuts, create a personal automation with a <strong>Time of Day</strong> trigger and use <strong>Open URLs</strong> to open your GitHub Pages link.
+      </p>
+      <p>
+        Practical recommendation: keep this GitHub page as the automation URL. It opens your preferred player page first, and you still keep the original website as a backup path inside the same interface.
+      </p>
+    </div>
+
+    <div class="footer">
+      Personal launcher page for MTV Lebanon • Not affiliated with MTV Lebanon or the backup website
+    </div>
   </div>
 
   <script>
-    const STREAM_URLS = [
-      "https://mtv3live.silicalive.com/mtvuser/mtv3.smil/playlist.m3u8",
-      "https://hms.pfs.gdn/v1/broadcast/mtv/playlist.m3u8"
-    ];
+    const DIRECT_STREAM_URL = "https://hms.pfs.gdn/v1/broadcast/mtv/playlist.m3u8";
+    const BACKUP_SITE_URL = "https://www.elahmad.org/tv/mtvlebanon.htm";
 
-    const player = document.getElementById("player");
-    const statusEl = document.getElementById("status");
-    const playBtn = document.getElementById("playBtn");
-    const reloadBtn = document.getElementById("reloadBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const siteBtn = document.getElementById("siteBtn");
+    const player = document.getElementById('player');
+    const backupFrame = document.getElementById('backupFrame');
+    const statusEl = document.getElementById('status');
+    const playBtn = document.getElementById('playBtn');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const backupBtn = document.getElementById('backupBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const openBackupTabBtn = document.getElementById('openBackupTabBtn');
+    const directModeBtn = document.getElementById('directModeBtn');
+    const copyBackupModeBtn = document.getElementById('copyBackupModeBtn');
+    const modeBadge = document.getElementById('modeBadge');
+    const overlayNote = document.getElementById('overlayNote');
 
-    let currentIndex = 0;
-    let triedAutoAdvance = false;
+    let currentMode = 'direct';
 
-    function showStatus(msg) {
-      statusEl.textContent = msg;
+    function currentPageUrlWithMode(mode) {
+      const url = new URL(location.href);
+      url.searchParams.set('mode', mode);
+      return url.toString();
     }
 
-    function setSource(index) {
-      currentIndex = index;
-      triedAutoAdvance = false;
-      player.src = STREAM_URLS[index];
-      player.load();
-      showStatus("Loaded source " + (index + 1) + " of " + STREAM_URLS.length + ".\n" + STREAM_URLS[index]);
+    function showStatus(message) {
+      statusEl.textContent = message;
     }
 
-    function nextSource() {
-      const next = (currentIndex + 1) % STREAM_URLS.length;
-      setSource(next);
+    function saveMode(mode) {
+      try { localStorage.setItem('mtv_mode', mode); } catch (_) {}
     }
 
-    async function tryPlayAndPip() {
+    function loadSavedMode() {
+      try { return localStorage.getItem('mtv_mode'); } catch (_) { return null; }
+    }
+
+    function setMode(mode, announce = true) {
+      currentMode = mode;
+      saveMode(mode);
+
+      if (mode === 'direct') {
+        player.style.display = 'block';
+        backupFrame.style.display = 'none';
+        modeBadge.textContent = 'DIRECT MODE';
+        overlayNote.innerHTML = 'Direct mode is best for PiP. If it fails, tap <strong>Use Backup Site</strong>.';
+        backupBtn.textContent = 'Use Backup Site';
+
+        if (!player.src) {
+          player.src = DIRECT_STREAM_URL;
+          player.load();
+        }
+
+        if (announce) {
+          showStatus(
+            'Direct mode ready.\n' +
+            'Primary direct stream:\n' + DIRECT_STREAM_URL + '\n\n' +
+            'Tap "Start Sound + PiP" to play.'
+          );
+        }
+      } else {
+        player.style.display = 'none';
+        backupFrame.style.display = 'block';
+        modeBadge.textContent = 'BACKUP SITE';
+        overlayNote.innerHTML = 'Backup mode uses the original website. Use its own controls inside the page.';
+        backupBtn.textContent = 'Back to Direct';
+
+        if (!backupFrame.src) {
+          backupFrame.src = BACKUP_SITE_URL;
+        }
+
+        if (announce) {
+          showStatus(
+            'Backup site loaded.\n' +
+            'Watching via original website:\n' + BACKUP_SITE_URL + '\n\n' +
+            'If the embedded site behaves strangely on iPhone, use "Open backup site in a new tab".'
+          );
+        }
+      }
+    }
+
+    async function startDirectPlayback() {
+      if (currentMode !== 'direct') setMode('direct', false);
+
       try {
         player.muted = false;
         await player.play();
-        showStatus("Playback started from source " + (currentIndex + 1) + ".");
 
-        if (document.pictureInPictureEnabled && player.requestPictureInPicture) {
+        showStatus(
+          'Playback started.\n' +
+          'Using direct stream:\n' + DIRECT_STREAM_URL
+        );
+
+        if (document.pictureInPictureEnabled && typeof player.requestPictureInPicture === 'function') {
           try {
             await player.requestPictureInPicture();
-            showStatus("Playback started.\nPiP requested.");
+            showStatus(
+              'Playback started.\nPiP requested.\nUsing direct stream:\n' + DIRECT_STREAM_URL
+            );
             return;
           } catch (_) {}
         }
 
-        if (typeof player.webkitSetPresentationMode === "function") {
+        if (typeof player.webkitSetPresentationMode === 'function') {
           try {
-            player.webkitSetPresentationMode("picture-in-picture");
-            showStatus("Playback started.\nSafari PiP requested.");
+            player.webkitSetPresentationMode('picture-in-picture');
+            showStatus(
+              'Playback started.\nPiP requested.\nUsing direct stream:\n' + DIRECT_STREAM_URL
+            );
             return;
           } catch (_) {}
         }
 
-        showStatus("Playback started.\nPiP not available right now.");
-      } catch (e) {
-        showStatus("Playback blocked or failed.\nTry Next Source or Open Original Site.");
+        showStatus(
+          'Playback started.\nUsing direct stream:\n' + DIRECT_STREAM_URL + '\n\n' +
+          'PiP was not available right now.'
+        );
+      } catch (_) {
+        showStatus(
+          'Direct stream did not start.\n' +
+          'Try Reload once.\n' +
+          'If it still fails, tap "Use Backup Site".'
+        );
       }
     }
 
-    function reloadStream() {
-      const src = STREAM_URLS[currentIndex];
-      player.pause();
-      player.removeAttribute("src");
-      player.load();
-      setTimeout(() => {
-        player.src = src;
+    function reloadCurrent() {
+      if (currentMode === 'direct') {
+        const src = DIRECT_STREAM_URL;
+        player.pause();
+        player.removeAttribute('src');
         player.load();
-        showStatus("Reloaded source " + (currentIndex + 1) + ".");
-      }, 200);
+        setTimeout(() => {
+          player.src = src;
+          player.load();
+          showStatus('Direct stream reloaded.\n' + src);
+        }, 180);
+      } else {
+        if (!backupFrame.src) backupFrame.src = BACKUP_SITE_URL;
+        else backupFrame.src = backupFrame.src;
+        showStatus('Backup site reloaded.\n' + BACKUP_SITE_URL);
+      }
     }
 
-    player.addEventListener("error", () => {
-      if (!triedAutoAdvance && currentIndex + 1 < STREAM_URLS.length) {
-        triedAutoAdvance = true;
-        showStatus("Source " + (currentIndex + 1) + " failed.\nTrying next source...");
-        setTimeout(() => setSource(currentIndex + 1), 300);
-      } else {
-        showStatus("All tested sources failed in the browser.\nUse Open Original Site.");
+    async function copyText(text, okMessage) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showStatus(okMessage);
+      } catch (_) {
+        showStatus('Copy failed automatically.\nPlease copy the address from the browser bar.');
       }
+    }
+
+    player.addEventListener('error', () => {
+      showStatus(
+        'The direct stream returned an error in the browser.\n' +
+        'Tap "Use Backup Site" to switch to the original website.'
+      );
     });
 
-    playBtn.addEventListener("click", tryPlayAndPip);
-    reloadBtn.addEventListener("click", reloadStream);
-    nextBtn.addEventListener("click", nextSource);
-    siteBtn.addEventListener("click", () => {
-      window.location.href = "https://www.elahmad.org/tv/mtvlebanon.htm";
+    player.addEventListener('stalled', () => {
+      showStatus(
+        'The direct stream stalled.\nTry Reload.\nIf needed, use the backup site.'
+      );
     });
 
-    setSource(0);
+    playBtn.addEventListener('click', startDirectPlayback);
+    reloadBtn.addEventListener('click', reloadCurrent);
+    backupBtn.addEventListener('click', () => {
+      setMode(currentMode === 'direct' ? 'backup' : 'direct');
+    });
+    copyBtn.addEventListener('click', () => {
+      copyText(currentPageUrlWithMode(currentMode), 'Copied this page link.\nMode: ' + currentMode.toUpperCase());
+    });
+    openBackupTabBtn.addEventListener('click', () => {
+      window.open(BACKUP_SITE_URL, '_blank', 'noopener,noreferrer');
+      showStatus('Opened backup site in a new tab.');
+    });
+    directModeBtn.addEventListener('click', () => setMode('direct'));
+    copyBackupModeBtn.addEventListener('click', () => {
+      copyText(currentPageUrlWithMode('backup'), 'Copied backup-mode link.\nIt opens straight into backup mode.');
+    });
+
+    (function init() {
+      const params = new URLSearchParams(location.search);
+      const requestedMode = params.get('mode');
+      const savedMode = loadSavedMode();
+      const mode = (requestedMode === 'backup' || requestedMode === 'direct') ? requestedMode : (savedMode || 'direct');
+      setMode(mode, true);
+    })();
   </script>
 </body>
 </html>
