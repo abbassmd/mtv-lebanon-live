@@ -2,31 +2,428 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTV Lebanon Live</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>MTV Lebanon Live - iPhone Optimized</title>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        video { width: 100%; max-width: 800px; height: auto; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .status {
+            background: #1a1a1a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #8b0000;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            aspect-ratio: 16/9;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #2a2a2a;
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        button.primary {
+            background: #e63946;
+            grid-column: 1 / -1;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .info {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .info h3 {
+            margin-bottom: 10px;
+            color: #e63946;
+        }
+        
+        .info ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info li {
+            margin-bottom: 5px;
+        }
+        
+        .error {
+            background: #8b0000;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            button.primary {
+                grid-column: 1;
+            }
+        }
     </style>
 </head>
 <body>
-
-    <video 
-        id="video" 
-        controls 
-        playsinline 
-        webkit-playsinline 
-        autoplay>
-        <source src="https://YOUR_WORKER_URL.workers.dev/" type="application/x-mpegURL">
-        Your browser does not support HLS playback.
-    </video>
+    <div class="container">
+        <div class="live-indicator">
+            <div class="live-dot"></div>
+            <span>LIVE</span>
+        </div>
+        
+        <h1>MTV Lebanon Live</h1>
+        
+        <div class="status" id="status">
+            Ready. Tap "Start Stream" to begin.
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="video-container">
+            <video id="video" playsinline webkit-playsinline controls></video>
+        </div>
+        
+        <div class="controls">
+            <button class="primary" id="startBtn">▶ Start Stream</button>
+            <button id="pipBtn" disabled>📺 PiP Mode</button>
+            <button id="reloadBtn" disabled>🔄 Reload</button>
+            <button id="fullscreenBtn" disabled>⛶ Fullscreen</button>
+        </div>
+        
+        <div class="info">
+            <h3>iPhone Safari Instructions</h3>
+            <ul>
+                <li><strong>Use Safari</strong> - Not Chrome or in-app browsers</li>
+                <li><strong>Tap "Start Stream"</strong> - Required for audio autoplay</li>
+                <li><strong>PiP Mode</strong> - Tap PiP button, then swipe home</li>
+                <li><strong>For auto-PiP</strong> - Create a Shortcuts automation</li>
+            </ul>
+            
+            <h3>Shortcuts Automation Setup</h3>
+            <ol>
+                <li>Open Shortcuts app</li>
+                <li>Automation → + → Create Personal Automation</li>
+                <li>Time of Day → Set to show time (e.g., 8:00 PM)</li>
+                <li>Add Action → "Open URLs"</li>
+                <li>Paste this page URL</li>
+                <li>Turn OFF "Ask Before Running"</li>
+            </ol>
+            
+            <p style="margin-top: 15px; opacity: 0.8; font-size: 12px;">
+                <strong>Note:</strong> This page uses a Cloudflare Worker proxy to bypass CORS restrictions. 
+                Stream: <code id="streamUrl">Loading...</code>
+            </p>
+        </div>
+    </div>
 
     <script>
-        const video = document.getElementById('video');
-        // Safari handles .m3u8 natively, so no extra JS libraries are needed.
-        video.addEventListener('loadedmetadata', () => {
-            video.play().catch(e => console.log("Autoplay blocked, waiting for user interaction."));
+        // Configuration - UPDATE THIS WITH YOUR CLOUDFLARE WORKER URL
+        const WORKER_URL = 'https://your-worker-name.your-username.workers.dev';
+        
+        // Stream sources (original URLs)
+        const STREAM_SOURCES = [
+            'https://live.3cd.io/v1/broadcast/mtv/playlist.m3u8',
+            'https://mtv3live.silicalive.com/mtvuser/mtv3.smil/playlist.m3u8',
+            'https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mtv-lebanon/b8ebb2a5affb812f1541712adde10e26/index.m3u8'
+        ];
+        
+        let currentSourceIndex = 0;
+        let hls = null;
+        let video = document.getElementById('video');
+        let status = document.getElementById('status');
+        let error = document.getElementById('error');
+        let startBtn = document.getElementById('startBtn');
+        let pipBtn = document.getElementById('pipBtn');
+        let reloadBtn = document.getElementById('reloadBtn');
+        let fullscreenBtn = document.getElementById('fullscreenBtn');
+        
+        // Show the current stream URL
+        document.getElementById('streamUrl').textContent = STREAM_SOURCES[0].substring(0, 50) + '...';
+        
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+            setTimeout(() => error.classList.remove('show'), 5000);
+        }
+        
+        function updateStatus(message) {
+            status.textContent = message;
+        }
+        
+        // Check if HLS is supported
+        function isHlsSupported() {
+            return !!(window.Hls || video.canPlayType('application/vnd.apple.mpegurl'));
+        }
+        
+        // Initialize HLS.js for non-Safari browsers
+        function initHls(url) {
+            if (window.Hls && Hls.isSupported()) {
+                if (hls) {
+                    hls.destroy();
+                }
+                
+                hls = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 90
+                });
+                
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    updateStatus('Stream loaded. Playing...');
+                    video.play().catch(e => console.error('Play error:', e));
+                });
+                
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        console.error('HLS fatal error:', data);
+                        tryNextSource();
+                    }
+                });
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Play stream using proxy
+        async function playStream() {
+            const proxyUrl = `${WORKER_URL}?url=${encodeURIComponent(STREAM_SOURCES[currentSourceIndex])}`;
+            
+            updateStatus('Connecting via proxy...');
+            startBtn.disabled = true;
+            reloadBtn.disabled = true;
+            
+            try {
+                // For Safari (native HLS)
+                if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = proxyUrl;
+                    video.addEventListener('loadedmetadata', () => {
+                        updateStatus('Stream loaded. Playing...');
+                        video.play().catch(e => {
+                            console.error('Safari play error:', e);
+                            showError('Tap the video to start playback');
+                        });
+                    });
+                    
+                    video.addEventListener('error', (e) => {
+                        console.error('Video error:', e);
+                        tryNextSource();
+                    });
+                } 
+                // For other browsers using HLS.js
+                else if (!initHls(proxyUrl)) {
+                    showError('Your browser does not support HLS playback');
+                }
+                
+                // Enable controls
+                pipBtn.disabled = false;
+                reloadBtn.disabled = false;
+                fullscreenBtn.disabled = false;
+                
+            } catch (err) {
+                console.error('Stream error:', err);
+                showError(`Failed to load stream: ${err.message}`);
+                tryNextSource();
+            }
+        }
+        
+        // Try next stream source
+        function tryNextSource() {
+            currentSourceIndex = (currentSourceIndex + 1) % STREAM_SOURCES.length;
+            updateStatus(`Trying alternative source ${currentSourceIndex + 1}...`);
+            setTimeout(() => playStream(), 1000);
+        }
+        
+        // Picture-in-Picture
+        async function togglePiP() {
+            try {
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                } else {
+                    if (video.readyState >= 2) {
+                        await video.requestPictureInPicture();
+                    } else {
+                        showError('Wait for stream to load first');
+                    }
+                }
+            } catch (err) {
+                console.error('PiP error:', err);
+                showError('PiP not available on this device');
+            }
+        }
+        
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                video.requestFullscreen?.() || 
+                video.webkitRequestFullscreen?.() ||
+                video.webkitEnterFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || 
+                document.webkitExitFullscreen?.();
+            }
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            playStream();
         });
+        
+        pipBtn.addEventListener('click', togglePiP);
+        reloadBtn.addEventListener('click', () => {
+            currentSourceIndex = 0;
+            video.src = '';
+            playStream();
+        });
+        
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        
+        // Video events
+        video.addEventListener('play', () => {
+            updateStatus('▶ Playing');
+        });
+        
+        video.addEventListener('pause', () => {
+            updateStatus('⏸ Paused');
+        });
+        
+        video.addEventListener('waiting', () => {
+            updateStatus('⏳ Buffering...');
+        });
+        
+        video.addEventListener('playing', () => {
+            updateStatus('▶ Playing');
+        });
+        
+        // Handle visibility change (for PiP)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && video.paused === false) {
+                updateStatus('▶ Playing in background');
+            }
+        });
+        
+        // iOS-specific: Prevent zoom on double tap
+        document.addEventListener('dblclick', function(event) {
+            event.preventDefault();
+        }, { passive: false });
+        
+        // Check PiP support on load
+        if ('pictureInPictureEnabled' in document) {
+            document.addEventListener('enterpictureinpicture', () => {
+                updateStatus('📺 PiP mode active');
+            });
+            
+            document.addEventListener('leavepictureinpicture', () => {
+                updateStatus('▶ Back to full player');
+            });
+        } else {
+            pipBtn.disabled = true;
+            pipBtn.textContent = 'PiP Not Supported';
+        }
     </script>
 </body>
 </html>
