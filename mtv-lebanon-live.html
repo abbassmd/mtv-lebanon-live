@@ -9,97 +9,177 @@
   <style>
     html, body {
       margin: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      overflow: hidden;
+      background: #0b0b0f;
+      color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
-
-    .frame-wrap {
-      position: fixed;
-      inset: 0;
+    body { padding: 18px; }
+    .wrap { max-width: 900px; margin: 0 auto; }
+    .card {
+      background: #15151c;
+      border: 1px solid #2a2a35;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .video-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
       background: #000;
     }
-
-    iframe {
+    video {
       width: 100%;
       height: 100%;
-      border: 0;
       display: block;
       background: #000;
     }
-
-    .topbar {
-      position: fixed;
-      top: env(safe-area-inset-top, 0);
-      left: 0;
-      right: 0;
-      z-index: 10;
-      display: flex;
-      gap: 10px;
-      padding: 10px 12px;
-      background: linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,0));
-      pointer-events: none;
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+      padding: 14px;
     }
-
-    .btn {
-      pointer-events: auto;
-      appearance: none;
+    button {
       border: 0;
-      border-radius: 12px;
-      padding: 10px 14px;
-      background: rgba(20,20,20,.8);
-      color: #fff;
-      font-size: 14px;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
       cursor: pointer;
     }
-
-    .msg {
-      position: fixed;
-      left: 12px;
-      right: 12px;
-      bottom: calc(12px + env(safe-area-inset-bottom, 0));
-      z-index: 10;
-      color: #fff;
-      background: rgba(0,0,0,.65);
-      border-radius: 12px;
+    .primary { background: #d72828; color: #fff; }
+    .secondary { background: #232330; color: #fff; border: 1px solid #343445; }
+    .status {
+      margin-top: 16px;
       padding: 12px 14px;
-      font-size: 14px;
-      line-height: 1.4;
-      pointer-events: none;
+      border-radius: 12px;
+      background: #1d2430;
+      border: 1px solid #2b3950;
+      color: #dbeafe;
+      white-space: pre-line;
+    }
+    @media (max-width: 640px) {
+      .controls { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <button class="btn" onclick="reloadFrame()">Reload</button>
-    <button class="btn" onclick="openOriginal()">Open Original</button>
-  </div>
+  <div class="wrap">
+    <h1>MTV Lebanon Live</h1>
 
-  <div class="frame-wrap">
-    <iframe
-      id="playerFrame"
-      src="https://www.elahmad.org/tv/mtvlebanon.htm"
-      allow="autoplay; fullscreen; picture-in-picture"
-      allowfullscreen
-      referrerpolicy="no-referrer">
-    </iframe>
-  </div>
+    <div class="card">
+      <div class="video-box">
+        <video
+          id="player"
+          controls
+          playsinline
+          webkit-playsinline
+          preload="auto"
+          crossorigin="anonymous"
+        ></video>
+      </div>
 
-  <div class="msg">
-    If playback does not start, tap inside the player. On iPhone, PiP must be triggered from the embedded page itself.
+      <div class="controls">
+        <button class="primary" id="playBtn">Play / Unmute / PiP</button>
+        <button class="secondary" id="reloadBtn">Reload Stream</button>
+        <button class="secondary" id="nextBtn">Try Next Source</button>
+        <button class="secondary" id="siteBtn">Open Original Site</button>
+      </div>
+    </div>
+
+    <div class="status" id="status">Ready.</div>
   </div>
 
   <script>
-    function reloadFrame() {
-      const f = document.getElementById('playerFrame');
-      f.src = f.src;
+    const STREAM_URLS = [
+      "https://mtv3live.silicalive.com/mtvuser/mtv3.smil/playlist.m3u8",
+      "https://hms.pfs.gdn/v1/broadcast/mtv/playlist.m3u8"
+    ];
+
+    const player = document.getElementById("player");
+    const statusEl = document.getElementById("status");
+    const playBtn = document.getElementById("playBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const siteBtn = document.getElementById("siteBtn");
+
+    let currentIndex = 0;
+    let triedAutoAdvance = false;
+
+    function showStatus(msg) {
+      statusEl.textContent = msg;
     }
 
-    function openOriginal() {
-      window.location.href = 'https://www.elahmad.org/tv/mtvlebanon.htm';
+    function setSource(index) {
+      currentIndex = index;
+      triedAutoAdvance = false;
+      player.src = STREAM_URLS[index];
+      player.load();
+      showStatus("Loaded source " + (index + 1) + " of " + STREAM_URLS.length + ".\n" + STREAM_URLS[index]);
     }
+
+    function nextSource() {
+      const next = (currentIndex + 1) % STREAM_URLS.length;
+      setSource(next);
+    }
+
+    async function tryPlayAndPip() {
+      try {
+        player.muted = false;
+        await player.play();
+        showStatus("Playback started from source " + (currentIndex + 1) + ".");
+
+        if (document.pictureInPictureEnabled && player.requestPictureInPicture) {
+          try {
+            await player.requestPictureInPicture();
+            showStatus("Playback started.\nPiP requested.");
+            return;
+          } catch (_) {}
+        }
+
+        if (typeof player.webkitSetPresentationMode === "function") {
+          try {
+            player.webkitSetPresentationMode("picture-in-picture");
+            showStatus("Playback started.\nSafari PiP requested.");
+            return;
+          } catch (_) {}
+        }
+
+        showStatus("Playback started.\nPiP not available right now.");
+      } catch (e) {
+        showStatus("Playback blocked or failed.\nTry Next Source or Open Original Site.");
+      }
+    }
+
+    function reloadStream() {
+      const src = STREAM_URLS[currentIndex];
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+      setTimeout(() => {
+        player.src = src;
+        player.load();
+        showStatus("Reloaded source " + (currentIndex + 1) + ".");
+      }, 200);
+    }
+
+    player.addEventListener("error", () => {
+      if (!triedAutoAdvance && currentIndex + 1 < STREAM_URLS.length) {
+        triedAutoAdvance = true;
+        showStatus("Source " + (currentIndex + 1) + " failed.\nTrying next source...");
+        setTimeout(() => setSource(currentIndex + 1), 300);
+      } else {
+        showStatus("All tested sources failed in the browser.\nUse Open Original Site.");
+      }
+    });
+
+    playBtn.addEventListener("click", tryPlayAndPip);
+    reloadBtn.addEventListener("click", reloadStream);
+    nextBtn.addEventListener("click", nextSource);
+    siteBtn.addEventListener("click", () => {
+      window.location.href = "https://www.elahmad.org/tv/mtvlebanon.htm";
+    });
+
+    setSource(0);
   </script>
 </body>
 </html>
