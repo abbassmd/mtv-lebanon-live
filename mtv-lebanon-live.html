@@ -3,233 +3,102 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>MTV Lebanon Live Launcher</title>
-  <meta name="theme-color" content="#0b0b10" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>MTV Lebanon Live</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
-    :root {
-      --bg: #0b0b10;
-      --card: #15161d;
-      --card-2: #1d1f28;
-      --line: #2a2d39;
-      --text: #f4f4f5;
-      --muted: #a1a1aa;
-      --accent: #dc2626;
-      --accent-2: #991b1b;
-      --ok: #10b981;
-      --radius: 18px;
-      --shadow: 0 18px 50px rgba(0,0,0,.38);
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif; }
-    body { min-height: 100svh; }
-    .wrap { max-width: 860px; margin: 0 auto; padding: 20px; }
-    .hero {
-      margin-top: 24px;
-      background: linear-gradient(180deg, var(--card), var(--card-2));
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
       overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .hero-inner { padding: 28px; }
-    .topline {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-      color: #fca5a5; background: rgba(220,38,38,.12); border: 1px solid rgba(220,38,38,.28);
-      padding: 8px 12px; border-radius: 999px;
+
+    .frame-wrap {
+      position: fixed;
+      inset: 0;
+      background: #000;
     }
-    .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
-    h1 { margin: 18px 0 10px; font-size: clamp(1.8rem, 4vw, 2.8rem); line-height: 1.08; }
-    p { color: var(--muted); line-height: 1.58; }
-    .strong { color: var(--text); }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-top: 22px; }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #000;
+    }
+
+    .topbar {
+      position: fixed;
+      top: env(safe-area-inset-top, 0);
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      padding: 10px 12px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,0));
+      pointer-events: none;
+    }
+
     .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 100%; min-height: 56px; padding: 14px 18px;
-      border-radius: 16px; border: 1px solid var(--line);
-      text-decoration: none; color: var(--text); font-size: 1rem; font-weight: 700;
-      background: #222533; cursor: pointer;
+      pointer-events: auto;
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: rgba(20,20,20,.8);
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
     }
-    .btn:active { transform: scale(.99); }
-    .btn-primary { background: var(--accent); border-color: transparent; }
-    .btn-primary:hover { background: #ef4444; }
-    .btn-secondary:hover { background: #2b3040; }
-    .cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin-top: 18px; }
-    .card {
-      background: linear-gradient(180deg, var(--card), var(--card-2));
-      border: 1px solid var(--line); border-radius: 20px; padding: 18px;
-    }
-    .card h2 { margin: 0 0 10px; font-size: 1rem; }
-    .small { font-size: .92rem; }
-    .code {
-      margin-top: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line);
-      background: #10131a; color: #d4d4d8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: .88rem; word-break: break-all;
-    }
-    .status {
-      display: none; margin-top: 16px; padding: 12px 14px; border-radius: 14px;
-      background: rgba(16,185,129,.12); color: #d1fae5; border: 1px solid rgba(16,185,129,.32);
-      white-space: pre-line;
-    }
-    .hint {
-      margin-top: 14px; padding: 14px 16px; border-radius: 16px;
-      background: #111827; border: 1px solid #243043; color: #cbd5e1;
-    }
-    .footer { text-align: center; color: #71717a; font-size: .9rem; padding: 28px 0 18px; }
-    @media (max-width: 700px) {
-      .grid, .cards { grid-template-columns: 1fr; }
-      .hero-inner { padding: 20px; }
-      .wrap { padding: 14px; }
+
+    .msg {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom, 0));
+      z-index: 10;
+      color: #fff;
+      background: rgba(0,0,0,.65);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.4;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="topline"><span class="dot"></span> MTV Lebanon live launcher</div>
-        <h1>Use GitHub as the launcher.<br>Use the original site as the player.</h1>
-        <p>
-          This page does <span class="strong">not</span> try to play the broken direct <code>.m3u8</code>.
-          It sends you to the working player page instead.
-        </p>
+  <div class="topbar">
+    <button class="btn" onclick="reloadFrame()">Reload</button>
+    <button class="btn" onclick="openOriginal()">Open Original</button>
+  </div>
 
-        <div class="grid">
-          <button class="btn btn-primary" id="openNowBtn">Open live now</button>
-          <button class="btn btn-secondary" id="copyBtn">Copy original site link</button>
-          <button class="btn btn-secondary" id="openNewBtn">Open in new tab</button>
-          <button class="btn btn-secondary" id="downloadIcsBtn">Download reminder (.ics)</button>
-        </div>
+  <div class="frame-wrap">
+    <iframe
+      id="playerFrame"
+      src="https://www.elahmad.org/tv/mtvlebanon.htm"
+      allow="autoplay; fullscreen; picture-in-picture"
+      allowfullscreen
+      referrerpolicy="no-referrer">
+    </iframe>
+  </div>
 
-        <div class="status" id="status"></div>
-
-        <div class="hint small">
-          Best iPhone use: create a Shortcuts automation that opens <span class="strong">this GitHub page</span> at the event time,
-          then let this page auto-forward to the real MTV Lebanon page.
-        </div>
-      </div>
-    </section>
-
-    <section class="cards">
-      <div class="card">
-        <h2>Why this works better</h2>
-        <p class="small">
-          The original page is the one that already works in Safari. So this launcher keeps GitHub for reminders and automation,
-          but sends playback to the page that actually streams.
-        </p>
-      </div>
-      <div class="card">
-        <h2>GitHub URL for automation</h2>
-        <p class="small">Use this URL in iPhone Shortcuts:</p>
-        <div class="code" id="launcherUrl"></div>
-      </div>
-    </section>
-
-    <div class="footer">MTV Lebanon launcher page</div>
+  <div class="msg">
+    If playback does not start, tap inside the player. On iPhone, PiP must be triggered from the embedded page itself.
   </div>
 
   <script>
-    const ORIGINAL_URL = 'https://www.elahmad.org/tv/mtvlebanon.htm';
-    const statusEl = document.getElementById('status');
-    const launcherUrlEl = document.getElementById('launcherUrl');
-
-    function showStatus(text) {
-      statusEl.style.display = 'block';
-      statusEl.textContent = text;
+    function reloadFrame() {
+      const f = document.getElementById('playerFrame');
+      f.src = f.src;
     }
 
-    function buildLauncherUrl() {
-      const url = new URL(window.location.href);
-      url.searchParams.set('autostart', '1');
-      url.searchParams.set('delay', '1200');
-      return url.toString();
-    }
-
-    function openLiveSameTab() {
-      showStatus('Opening the original MTV Lebanon page...');
-      window.location.href = ORIGINAL_URL;
-    }
-
-    function openLiveNewTab() {
-      const win = window.open(ORIGINAL_URL, '_blank', 'noopener,noreferrer');
-      if (win) {
-        showStatus('Opened the original page in a new tab.');
-      } else {
-        showStatus('Pop-up blocked. Please allow pop-ups or use Open live now.');
-      }
-    }
-
-    async function copyOriginalUrl() {
-      try {
-        await navigator.clipboard.writeText(ORIGINAL_URL);
-        showStatus('Original site link copied.');
-      } catch {
-        showStatus('Could not copy automatically.\nCopy this manually:\n' + ORIGINAL_URL);
-      }
-    }
-
-    function downloadReminder() {
-      const now = new Date();
-      const start = new Date(now.getTime() + 30 * 60 * 1000);
-      const end = new Date(start.getTime() + 60 * 60 * 1000);
-      const fmt = d => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const h = String(d.getHours()).padStart(2, '0');
-        const min = String(d.getMinutes()).padStart(2, '0');
-        const s = String(d.getSeconds()).padStart(2, '0');
-        return `${y}${m}${day}T${h}${min}${s}`;
-      };
-      const ics = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//MTV Lebanon Launcher//EN',
-        'CALSCALE:GREGORIAN',
-        'BEGIN:VEVENT',
-        `UID:mtv-${Date.now()}@launcher`,
-        `DTSTART:${fmt(start)}`,
-        `DTEND:${fmt(end)}`,
-        'SUMMARY:MTV Lebanon Live',
-        `DESCRIPTION:Open ${ORIGINAL_URL}`,
-        `URL:${ORIGINAL_URL}`,
-        'BEGIN:VALARM',
-        'TRIGGER:-PT5M',
-        'ACTION:DISPLAY',
-        'DESCRIPTION:MTV Lebanon Live starts soon',
-        'END:VALARM',
-        'END:VEVENT',
-        'END:VCALENDAR'
-      ].join('\r\n');
-
-      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'mtv-lebanon-live.ics';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showStatus('Reminder file downloaded. Import it into Calendar if you want.');
-    }
-
-    document.getElementById('openNowBtn').addEventListener('click', openLiveSameTab);
-    document.getElementById('openNewBtn').addEventListener('click', openLiveNewTab);
-    document.getElementById('copyBtn').addEventListener('click', copyOriginalUrl);
-    document.getElementById('downloadIcsBtn').addEventListener('click', downloadReminder);
-
-    launcherUrlEl.textContent = buildLauncherUrl();
-
-    const params = new URLSearchParams(window.location.search);
-    const autostart = params.get('autostart') === '1';
-    const delay = Number(params.get('delay') || '1200');
-
-    if (autostart) {
-      showStatus('Auto-forward is enabled.\nOpening the working player page...');
-      setTimeout(() => {
-        window.location.replace(ORIGINAL_URL);
-      }, Number.isFinite(delay) ? delay : 1200);
+    function openOriginal() {
+      window.location.href = 'https://www.elahmad.org/tv/mtvlebanon.htm';
     }
   </script>
 </body>
